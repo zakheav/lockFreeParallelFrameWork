@@ -51,10 +51,10 @@ public class SequenceNum {
 		}
 	}
 	
-	public int getAndIncrease() {
+	public int getAndIncrease(int size) {
 		while (true) {
 			int now = get();
-			if (compareAndSet(now, now + 1)) {
+			if (compareAndSet(now, (now + 1) % size)) {
 				return now;
 			}
 		}
