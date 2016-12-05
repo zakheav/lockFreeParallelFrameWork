@@ -19,7 +19,7 @@ public class Producer {// 生产者
 
 	public void add_Object(Object o) {
 		if (!taskBuffer.isFull()) {
-			taskBuffer.addElement(o);
+			taskBuffer.add_element(o);
 			memoryBarrier = true;// 内存屏障，保证之前的指令不会重排序到后面
 			if (taskDistributor.block) {
 				synchronized (taskBuffer) {

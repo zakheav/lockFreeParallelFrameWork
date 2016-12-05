@@ -20,7 +20,7 @@ public class ThreadPool {
 		this.workerList = new ArrayList<Worker>();
 		this.overFlowTasks = new ConcurrentLinkedQueue<Runnable>();
 		for (int i = 0; i < WORK_NUM; ++i) {
-			addWorker();
+			add_worker();
 		}
 	}
 
@@ -28,7 +28,7 @@ public class ThreadPool {
 		return instance;
 	}
 
-	private void addWorker() {
+	private void add_worker() {
 		RingBuffer taskBuffer = new RingBuffer(40000);
 		Worker worker = new Worker(taskBuffer);
 		worker.start();
@@ -53,7 +53,7 @@ public class ThreadPool {
 			
 			while (true) {
 				while (!taskBuffer.isEmpty()) {
-					Runnable task = (Runnable)taskBuffer.getElement();
+					Runnable task = (Runnable)taskBuffer.get_element();
 					task.run();
 				}
 				while (!overFlowTasks.isEmpty()) {// 检查溢出区是否存在任务
@@ -81,14 +81,14 @@ public class ThreadPool {
 		}
 	}
 
-	public void addTask(Runnable task) {
+	public void add_task(Runnable task) {
 		
 		int idx = (int) (Math.random() * WORK_NUM);
 		if (idx == WORK_NUM)
 			--idx;
 		Worker worker = workerList.get(idx);
 		if (!worker.taskBuffer.isFull()) {
-			worker.taskBuffer.addElement(task);
+			worker.taskBuffer.add_element(task);
 			
 			memoryBarrier = true;// 内存屏障，保证之前的指令不会重排序到后面
 			if (worker.block) {// 这个worker在阻塞等待新的任务

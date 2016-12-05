@@ -20,7 +20,7 @@ public abstract class TaskDistributor extends Thread {
 		
 		while(true) {
 			while(!producer.taskBuffer.isEmpty()) {
-				Object o = producer.taskBuffer.getElement();
+				Object o = producer.taskBuffer.get_element();
 				distribut_task(o);
 			}
 			while(!SpillTaskQueue.overFlowTasks.isEmpty()) {// 检查溢出区是否存在任务
