@@ -52,7 +52,7 @@ public class IterationThreadPool {
 		}
 
 		public void run() {
-			
+			int noBlockTimer = 50;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
 			while (true) {
 				while (!taskBuffer.isEmpty()) {
 					Runnable task = (Runnable)taskBuffer.get_element();
@@ -66,20 +66,24 @@ public class IterationThreadPool {
 						finishTaskNum.increase();
 					}
 				}
-				
-				this.block = true;
-				mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
-				
-				synchronized (taskBuffer) {
-					while (taskBuffer.isEmpty()) {
-						try {
-							taskBuffer.wait();
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						}
-					}
-					this.block = false;
+				if(noBlockTimer < 0) {
+					--noBlockTimer;
+				} else {
+					noBlockTimer = 50;
+					this.block = true;
 					mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
+					
+					synchronized (taskBuffer) {
+						while (taskBuffer.isEmpty()) {
+							try {
+								taskBuffer.wait();
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							}
+						}
+						this.block = false;
+						mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
+					}
 				}
 			}
 		}
