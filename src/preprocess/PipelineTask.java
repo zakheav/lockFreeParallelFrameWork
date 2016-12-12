@@ -2,16 +2,16 @@ package preprocess;
 
 import java.util.List;
 
-public class PipelineTask {
+public class PipelineTask implements Runnable {
 	private List<Handler> pipeline;
 
 	public PipelineTask(List<Handler> pipeline) {
 		this.pipeline = pipeline;
 	}
 	
-	public void runPipeline(Object task) {
+	public void run() {
 		for(Handler handler : pipeline) {
-			handler.preprocess(task);
+			handler.preprocess();
 		}
 	}
 }
