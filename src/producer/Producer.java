@@ -5,7 +5,7 @@ import util.RingBuffer;
 
 public class Producer {// 生产者
 	public RingBuffer taskBuffer;// 对应一个任务队列
-	private TaskDistributor taskDistributor;// 对应一个任务分发者
+	protected TaskDistributor taskDistributor;// 对应一个任务分发者
 	@SuppressWarnings("unused")
 	private volatile boolean memoryBarrier = true;// 提供内存屏障支持
 
