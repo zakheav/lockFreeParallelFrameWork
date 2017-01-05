@@ -29,7 +29,7 @@ public class ThreadPool {
 	}
 
 	private void add_worker() {
-		RingBuffer taskBuffer = new RingBuffer(40);
+		RingBuffer taskBuffer = new RingBuffer(40000);
 		Worker worker = new Worker(taskBuffer);
 		worker.start();
 		workerList.add(worker);
