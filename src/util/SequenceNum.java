@@ -59,13 +59,4 @@ public class SequenceNum {
 			}
 		}
 	}
-	
-//	public int getAndIncrease(int size) {
-//		while (true) {
-//			int now = get();
-//			if (compareAndSet(now, (now + 1) % size)) {
-//				return now;
-//			}
-//		}
-//	}
 }
