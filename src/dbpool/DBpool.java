@@ -61,10 +61,9 @@ public class DBpool {
 	}
 
 	private Connection get_conection() {// 相当于消费者
-		if (!pool.isEmpty()) {
-			Connection conn = (Connection) pool.get_element();
-
-			return conn;
+		Object conn = pool.get_element();
+		if (conn != null) {// 连接池不为空
+			return (Connection) conn;
 		}
 
 		this.block.increase();
@@ -82,8 +81,8 @@ public class DBpool {
 			this.block.decrease();
 			mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 
-			Connection conn = (Connection) pool.get_element();
-			return conn;
+			conn = pool.get_element();
+			return (Connection) conn;
 		}
 	}
 

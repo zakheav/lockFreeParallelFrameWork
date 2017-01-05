@@ -12,11 +12,11 @@ public class IterationThreadPool {
 	private final int WORK_NUM;
 	private static IterationThreadPool instance = new IterationThreadPool();
 	private SequenceNum finishTaskNum;// 本批任务的完成数
-	
+
 	private volatile boolean memoryBarrier = true;// 提供内存屏障支持
 	@SuppressWarnings("unused")
 	private volatile boolean mb = true;// 提供内存屏障支持
-	
+
 	private IterationThreadPool() {
 		this.WORK_NUM = 10;
 		this.workerList = new ArrayList<Worker>();
@@ -54,25 +54,30 @@ public class IterationThreadPool {
 		public void run() {
 			int noBlockTimer = 50;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
 			while (true) {
-				while (!taskBuffer.isEmpty()) {
-					Runnable task = (Runnable)taskBuffer.get_element();
-					task.run();
-					finishTaskNum.increase();
-				}
-				while (!overFlowTasks.isEmpty()) {// 检查溢出区是否存在任务
-					Runnable task = overFlowTasks.poll();
+				Object task = null;
+				do {
+					task = taskBuffer.get_element();
 					if (task != null) {
-						task.run();
+						((Runnable) task).run();
 						finishTaskNum.increase();
 					}
-				}
-				if(noBlockTimer < 0) {
+				} while (task != null);
+
+				do {// 检查溢出区是否存在任务
+					task = overFlowTasks.poll();
+					if (task != null) {
+						((Runnable) task).run();
+						finishTaskNum.increase();
+					}
+				} while (task != null);
+
+				if (noBlockTimer < 0) {
 					--noBlockTimer;
 				} else {
 					noBlockTimer = 50;
 					this.block = true;
 					mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
-					
+
 					synchronized (taskBuffer) {
 						while (taskBuffer.isEmpty()) {
 							try {
@@ -90,14 +95,12 @@ public class IterationThreadPool {
 	}
 
 	private void add_task(Runnable task) {
-		
+
 		int idx = (int) (Math.random() * WORK_NUM);
 		if (idx == WORK_NUM)
 			--idx;
 		Worker worker = workerList.get(idx);
-		if (!worker.taskBuffer.isFull()) {
-			worker.taskBuffer.add_element(task);
-			
+		if (worker.taskBuffer.add_element(task)) {// 可以向buffer中添加任务（buffer没有满）
 			memoryBarrier = true;// 内存屏障，保证之前的指令不会重排序到后面
 			if (worker.block) {// 这个worker在阻塞等待新的任务
 				synchronized (worker.taskBuffer) {
@@ -108,7 +111,7 @@ public class IterationThreadPool {
 			overFlowTasks.offer(task);
 		}
 	}
-	
+
 	public void add_taskList(List<Runnable> tasks) {// 一次性投放一批任务，保证任务全部完成后返回
 		finishTaskNum = new SequenceNum();
 		for (Runnable task : tasks) {

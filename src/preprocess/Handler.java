@@ -1,5 +1,5 @@
 package preprocess;
 
-public abstract class Handler {
-	abstract protected void preprocess();
+public interface Handler {
+	public void preprocess(Object params);
 }
