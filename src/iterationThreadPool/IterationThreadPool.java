@@ -26,7 +26,7 @@ public class IterationThreadPool {
 		}
 	}
 
-	public static IterationThreadPool getInstance() {
+	public static IterationThreadPool get_instance() {
 		return instance;
 	}
 

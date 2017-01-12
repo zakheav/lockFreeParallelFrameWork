@@ -8,7 +8,7 @@ import iterationThreadPool.IterationThreadPool;
 public class Test3 {// 测试分批执行任务
 	public static int counter[] = new int[20000];
 	public static void main(String[] args) {
-		IterationThreadPool itp = IterationThreadPool.getInstance();
+		IterationThreadPool itp = IterationThreadPool.get_instance();
 		List<Runnable> tasks = new ArrayList<Runnable>();
 		for(int i=0; i<20000; ++i) {
 			tasks.add(new Task3(i));

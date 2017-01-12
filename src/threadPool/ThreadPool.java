@@ -24,7 +24,7 @@ public class ThreadPool {
 		}
 	}
 
-	public static ThreadPool getInstance() {
+	public static ThreadPool get_instance() {
 		return instance;
 	}
 

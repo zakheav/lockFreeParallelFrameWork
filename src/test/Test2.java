@@ -6,7 +6,7 @@ public class Test2 {// 测试线程池会不会丢任务
 	public static int counter[] = new int[20000];
 
 	public static void main(String[] args) {
-		ThreadPool tp = ThreadPool.getInstance();
+		ThreadPool tp = ThreadPool.get_instance();
 		for(int j=1; j<=100; ++j) {
 			for (int i = 0; i < 20000; ++i) {
 				tp.add_task(new Task2(i));
