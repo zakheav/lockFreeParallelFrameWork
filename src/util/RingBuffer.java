@@ -31,7 +31,7 @@ public class RingBuffer {
 	}
 
 	public boolean add_element(Object o) {// 会同步多个线程的同时写
-		while(getWriteLock.compareAndSet(0, 1));// 获取写锁
+		while(!getWriteLock.compareAndSet(0, 1));// 获取写锁
 		
 		int readIdx = readPtr.get();
 		int writeIdx = writePtr.get();
@@ -54,7 +54,7 @@ public class RingBuffer {
 	}
 
 	public Object get_element() {// 会同步多个线程的同时读
-		while(getReadLock.compareAndSet(0, 1));// 获取读锁
+		while(!getReadLock.compareAndSet(0, 1));// 获取读锁
 		
 		int readIdx = readPtr.get();
 		int writeIdx = writePtr.get();
