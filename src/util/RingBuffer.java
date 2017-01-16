@@ -3,8 +3,8 @@ package util;
 public class RingBuffer {
 	private volatile int writeFinish = 0;// 生产者线程向消费者线程发消息
 
-	private volatile int getReadLock = 0;// 同步对readPtr的操作
-	private volatile int getWriteLock = 0;// 同步对writePtr的操作
+	private final SequenceNum getReadLock;// 同步对readPtr的操作
+	private final SequenceNum getWriteLock;// 同步对writePtr的操作
 
 	private final int SIZE;
 	private Object[] ringBuffer;
@@ -26,18 +26,18 @@ public class RingBuffer {
 		this.ringBuffer = new Object[size];
 		this.readPtr = new SequenceNum();
 		this.writePtr = new SequenceNum();
+		this.getReadLock = new SequenceNum();
+		this.getWriteLock = new SequenceNum();
 	}
 
 	public boolean add_element(Object o) {// 会同步多个线程的同时写
-		while (getWriteLock != 0)
-			;
-		getWriteLock = 1;// 获取写锁
-
+		while(getWriteLock.compareAndSet(0, 1));// 获取写锁
+		
 		int readIdx = readPtr.get();
 		int writeIdx = writePtr.get();
 		
 		if((writeIdx + 1) % SIZE == readIdx) {// buffer已经满了
-			getWriteLock = 0;// 释放写锁
+			getWriteLock.set(0);// 释放写锁
 			return false;
 		}
 		
@@ -49,20 +49,18 @@ public class RingBuffer {
 		
 		writeFinish = 1;// 生产者写结束，向消费者发出消息
 
-		getWriteLock = 0;// 释放写锁
+		getWriteLock.set(0);// 释放写锁
 		return true;
 	}
 
 	public Object get_element() {// 会同步多个线程的同时读
-		while (getReadLock != 0)
-			;
-		getReadLock = 1;// 获取读锁
+		while(getReadLock.compareAndSet(0, 1));// 获取读锁
 		
 		int readIdx = readPtr.get();
 		int writeIdx = writePtr.get();
 		
 		if(readIdx == writeIdx) {// buffer已经空了
-			getReadLock = 0;// 释放读锁
+			getReadLock.set(0);// 释放读锁
 			return null;
 		}
 		
@@ -71,7 +69,7 @@ public class RingBuffer {
 		Object o = ringBuffer[readIdx];
 		readPtr.increase(SIZE);// 读取元素
 		
-		getReadLock = 0;// 释放读锁
+		getReadLock.set(0);// 释放读锁
 		return o;
 	}
 

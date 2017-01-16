@@ -32,6 +32,10 @@ public class SequenceNum {
 	public int get() {
 		return value;
 	}
+	
+	public void set(int newValue) {
+		value = newValue;
+	}
 
 	public int increase(int size) {
 		while (true) {
