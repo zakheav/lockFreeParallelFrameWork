@@ -16,13 +16,13 @@ public class Test3 {// 测试分批执行任务
 		long begin = System.currentTimeMillis();
 		for(int i=0; i<1; ++i) {
 			itp.add_taskList(tasks);
-			for(int j=0; j<2000; ++j) {
+			for(int j=0; j<20000; ++j) {
 				if(counter[j] != 1) {
 					System.out.println(j);
 				} 
 			}
 		}
 		long cost = System.currentTimeMillis() - begin;
-		System.out.println(cost);
+		System.out.println("cost: "+cost);
 	}
 }

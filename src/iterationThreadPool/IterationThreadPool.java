@@ -100,15 +100,18 @@ public class IterationThreadPool {
 		if (idx == WORK_NUM)
 			--idx;
 		Worker worker = workerList.get(idx);
-		if (worker.taskBuffer.add_element(task)) {// 可以向buffer中添加任务（buffer没有满）
-			memoryBarrier = true;// 内存屏障，保证之前的指令不会重排序到后面
-			if (worker.block) {// 这个worker在阻塞等待新的任务
-				synchronized (worker.taskBuffer) {
-					worker.taskBuffer.notify();
+
+		if (worker.block) {// 这个worker在阻塞等待新的任务
+			synchronized (worker.taskBuffer) {
+				if (!worker.taskBuffer.add_element(task)) {// 无法向buffer中添加任务（buffer满）
+					overFlowTasks.offer(task);
 				}
+				worker.taskBuffer.notify();
 			}
 		} else {
-			overFlowTasks.offer(task);
+			if (!worker.taskBuffer.add_element(task)) {// 无法向buffer中添加任务（buffer满）
+				overFlowTasks.offer(task);
+			}
 		}
 	}
 
