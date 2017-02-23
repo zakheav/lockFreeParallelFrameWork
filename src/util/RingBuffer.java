@@ -1,7 +1,7 @@
 package util;
 
 public class RingBuffer {
-	private volatile int writeFinish = 0;// 同步读与写
+	// private volatile int writeFinish = 0;// 同步读与写
 
 	private final SequenceNum getReadLock;// 同步对readPtr的操作
 	private final SequenceNum getWriteLock;// 同步对writePtr的操作
@@ -42,13 +42,13 @@ public class RingBuffer {
 			return false;
 		}
 
-		writeFinish = 0;
+		// writeFinish = 0;
 		mb = memoryBarrier;// 内存屏障, 保证后面的指令不会重排序到这条指令之前
 
 		ringBuffer[writeIdx] = o;
 		writePtr.increase(SIZE);// 写元素
 
-		writeFinish = 1;// 生产者写结束，向消费者发出消息
+		// writeFinish = 1;// 生产者写结束，向消费者发出消息
 
 		getWriteLock.set(0);// 释放写锁
 		return true;
@@ -57,8 +57,8 @@ public class RingBuffer {
 	public Object get_element() {// 会同步多个线程的同时读
 		while (!getReadLock.compareAndSet(0, 1))
 			;// 获取读锁
-		while (writeFinish == 0);// 等待生产者写结束
-		
+		// while (writeFinish == 0);// 等待生产者写结束
+
 		int readIdx = readPtr.get();
 		int writeIdx = writePtr.get();
 
