@@ -11,12 +11,8 @@ public class ThreadPool {
 	private final int WORK_NUM;
 	private static ThreadPool instance = new ThreadPool();
 
-	private volatile boolean memoryBarrier = true;// 提供内存屏障支持
-	@SuppressWarnings("unused")
-	private volatile boolean mb = true;// 提供内存屏障支持
-
 	private ThreadPool() {
-		this.WORK_NUM = 1;
+		this.WORK_NUM = 4;
 		this.workerList = new ArrayList<Worker>();
 		this.overFlowTasks = new ConcurrentLinkedQueue<Runnable>();
 		for (int i = 0; i < WORK_NUM; ++i) {
@@ -29,7 +25,7 @@ public class ThreadPool {
 	}
 
 	private void add_worker() {
-		RingBuffer taskBuffer = new RingBuffer(40000);
+		RingBuffer taskBuffer = new RingBuffer(65536);
 		Worker worker = new Worker(taskBuffer);
 		worker.start();
 		workerList.add(worker);
@@ -44,8 +40,8 @@ public class ThreadPool {
 			this.block = false;
 		}
 
-		public void run() {
-			int noBlockTimer = 0;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
+		public void run() {		
+			int noBlockTimer = 10000;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
 			while (true) {
 				Object task = null;
 				do {
@@ -65,9 +61,8 @@ public class ThreadPool {
 				if (noBlockTimer > 0) {
 					--noBlockTimer;
 				} else {
-					noBlockTimer = 0;
+					noBlockTimer = 10000;
 					this.block = true;
-					mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 
 					synchronized (taskBuffer) {
 						while (taskBuffer.isEmpty()) {
@@ -78,7 +73,6 @@ public class ThreadPool {
 							}
 						}
 						this.block = false;
-						mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 					}
 				}
 			}
@@ -86,7 +80,6 @@ public class ThreadPool {
 	}
 
 	public void add_task(Runnable task) {
-
 		int idx = (int) (Math.random() * WORK_NUM);
 		if (idx == WORK_NUM)
 			--idx;

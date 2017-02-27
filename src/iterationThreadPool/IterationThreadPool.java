@@ -18,7 +18,7 @@ public class IterationThreadPool {
 	private volatile boolean mb = true;// 提供内存屏障支持
 
 	private IterationThreadPool() {
-		this.WORK_NUM = 10;
+		this.WORK_NUM = 4;
 		this.workerList = new ArrayList<Worker>();
 		this.overFlowTasks = new ConcurrentLinkedQueue<Runnable>();
 		for (int i = 0; i < WORK_NUM; ++i) {
@@ -31,7 +31,7 @@ public class IterationThreadPool {
 	}
 
 	private void add_worker() {
-		RingBuffer taskBuffer = new RingBuffer(40000);
+		RingBuffer taskBuffer = new RingBuffer(65536);
 		Worker worker = new Worker(taskBuffer);
 		worker.start();
 		workerList.add(worker);
@@ -47,7 +47,7 @@ public class IterationThreadPool {
 		}
 
 		public void run() {
-			int noBlockTimer = 0;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
+			int noBlockTimer = 1000;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
 			while (true) {
 				Object task = null;
 				do {
@@ -69,7 +69,7 @@ public class IterationThreadPool {
 				if (noBlockTimer > 0) {
 					--noBlockTimer;
 				} else {
-					noBlockTimer = 0;
+					noBlockTimer = 1000;
 					this.block = true;
 					mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 

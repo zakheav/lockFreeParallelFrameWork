@@ -25,41 +25,44 @@ public class SequenceNum {
 		value = 0;
 	}
 
-	public boolean compareAndSet(final int expectedValue, final int newValue) {
+	public final boolean compareAndSet(final int expectedValue, final int newValue) {
 		return unsafe.compareAndSwapInt(this, VALUE_OFFSET, expectedValue, newValue);
 	}
 
-	public int get() {
+	public final int get() {
 		return value;
 	}
 	
-	public void set(int newValue) {
+	public final void set(int newValue) {
 		value = newValue;
 	}
 
-	public int increase(int size) {
+	public final int increase(int size) {// size 必须是2^n
 		while (true) {
 			int now = get();
-			if (compareAndSet(now, (now + 1) % size)) {
-				return now + 1;
+			int newNum = (now + 1) & (size - 1);
+			if (compareAndSet(now, newNum)) {
+				return newNum;
 			}
 		}
 	}
 
-	public int increase() {
+	public final int increase() {
 		while (true) {
 			int now = get();
-			if (compareAndSet(now, now + 1)) {
-				return now + 1;
+			int newNum = now + 1;
+			if (compareAndSet(now, newNum)) {
+				return newNum;
 			}
 		}
 	}
 	
-	public int decrease() {
+	public final int decrease() {
 		while (true) {
 			int now = get();
-			if (compareAndSet(now, now - 1)) {
-				return now - 1;
+			int newNum = now - 1;
+			if (compareAndSet(now, newNum)) {
+				return newNum;
 			}
 		}
 	}
