@@ -40,7 +40,7 @@ public class ThreadPool {
 			this.block = false;
 		}
 
-		public void run() {		
+		public void run() {
 			int noBlockTimer = 10000;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
 			while (true) {
 				Object task = null;

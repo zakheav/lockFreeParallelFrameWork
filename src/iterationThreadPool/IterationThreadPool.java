@@ -13,10 +13,6 @@ public class IterationThreadPool {
 	private static IterationThreadPool instance = new IterationThreadPool();
 	private SequenceNum finishTaskNum;// 本批任务的完成数
 
-	private volatile boolean memoryBarrier = true;// 提供内存屏障支持
-	@SuppressWarnings("unused")
-	private volatile boolean mb = true;// 提供内存屏障支持
-
 	private IterationThreadPool() {
 		this.WORK_NUM = 4;
 		this.workerList = new ArrayList<Worker>();
@@ -71,7 +67,6 @@ public class IterationThreadPool {
 				} else {
 					noBlockTimer = 1000;
 					this.block = true;
-					mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 
 					synchronized (taskBuffer) {
 						while (taskBuffer.isEmpty()) {
@@ -82,7 +77,6 @@ public class IterationThreadPool {
 							}
 						}
 						this.block = false;
-						mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
 					}
 				}
 			}
