@@ -10,9 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
 import util.RingBuffer;
-import util.SequenceNum;
 
 public class DBpool {
 	private final String url;
@@ -23,11 +21,6 @@ public class DBpool {
 	private final int POOL_SIZE;
 	private final RingBuffer pool;
 
-	private SequenceNum block;// 用于判断阻塞等待的线程数量
-	private volatile boolean memoryBarrier = true;// 提供内存屏障支持
-	@SuppressWarnings("unused")
-	private volatile boolean mb = true;// 提供内存屏障支持
-
 	private static DBpool instance = new DBpool();
 
 	private DBpool() {
@@ -36,7 +29,6 @@ public class DBpool {
 		this.password = "";
 		this.POOL_SIZE = 10;
 		this.pool = new RingBuffer(POOL_SIZE);
-		this.block = new SequenceNum();
 		try {
 			Class.forName(DBpool.driverClassName);
 		} catch (ClassNotFoundException e) {
@@ -66,8 +58,7 @@ public class DBpool {
 			return (Connection) conn;
 		}
 
-		this.block.increase();
-		mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
+		pool.block.increase();
 
 		synchronized (pool) {
 			while (pool.isEmpty()) {
@@ -78,8 +69,7 @@ public class DBpool {
 				}
 			}
 
-			this.block.decrease();
-			mb = memoryBarrier;// 在block变量之后添加内存屏障，该指令后面的指令不会被重排序到前面
+			pool.block.decrease();
 
 			conn = pool.get_element();
 			return (Connection) conn;
@@ -89,8 +79,7 @@ public class DBpool {
 	private void release_conection(Connection conn) {// 相当于生产者
 		pool.add_element(conn);
 
-		memoryBarrier = true;// 内存屏障，保证之前的指令不会重排序到后面
-		if (block.get() > 0) {// 存在阻塞的线程
+		if (pool.block.get() > 0) {// 存在阻塞的线程
 			synchronized (pool) {
 				pool.notifyAll();
 			}

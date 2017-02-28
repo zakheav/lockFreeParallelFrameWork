@@ -1,15 +1,16 @@
 package util;
 
-public class RingBuffer {
+public final class RingBuffer {
 
 	private final SequenceNum getReadLock;// 同步对readPtr的操作
 	private final SequenceNum getWriteLock;// 同步对writePtr的操作
 
 	private final int SIZE;// 一定是2^n
 	private Object[] ringBuffer;
-	public SequenceNum readPtr;// 可以读的第一个下标
-	public SequenceNum writePtr;// 可以写的第一个下标
-
+	public final SequenceNum readPtr;// 可以读的第一个下标
+	public final SequenceNum writePtr;// 可以写的第一个下标
+	public SequenceNum block;// 阻塞在ringBuffer的线程数目
+	
 	// writePtr 在 readPtr后面
 	// readPtr == writePtr时ringBuffer为空
 	// readPtr == (writePtr+1)%size时ringBuffer为满
@@ -23,6 +24,7 @@ public class RingBuffer {
 		this.writePtr = new SequenceNum();
 		this.getReadLock = new SequenceNum();
 		this.getWriteLock = new SequenceNum();
+		this.block = new SequenceNum();
 	}
 
 	public final boolean add_element(Object o) {// 会同步多个线程的同时写

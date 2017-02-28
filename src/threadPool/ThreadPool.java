@@ -4,20 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import util.RingBuffer;
+import util.SequenceNum;
 
 public class ThreadPool {
 	private List<Worker> workerList;
 	private ConcurrentLinkedQueue<Runnable> overFlowTasks;// 任务溢出区
-	private final int WORK_NUM;
+	private final int WORKER_NUM;// 必须是2^n
 	private static ThreadPool instance = new ThreadPool();
+	private final int noBlockTimes = 10000;
+	private SequenceNum workerIdx;
 
 	private ThreadPool() {
-		this.WORK_NUM = 4;
+		this.WORKER_NUM = 1;// 必须是2^n
 		this.workerList = new ArrayList<Worker>();
 		this.overFlowTasks = new ConcurrentLinkedQueue<Runnable>();
-		for (int i = 0; i < WORK_NUM; ++i) {
+		for (int i = 0; i < WORKER_NUM; ++i) {
 			add_worker();
 		}
+		this.workerIdx = new SequenceNum();
 	}
 
 	public static ThreadPool get_instance() {
@@ -32,18 +36,16 @@ public class ThreadPool {
 	}
 
 	class Worker extends Thread {
-		private volatile boolean block;// 用于判断这个worker是否已经阻塞等待新的任务
 		public RingBuffer taskBuffer;
 
 		public Worker(RingBuffer taskBuffer) {
 			this.taskBuffer = taskBuffer;
-			this.block = false;
 		}
 
 		public void run() {
-			int noBlockTimer = 10000;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
+			int noBlockTimer = noBlockTimes;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
+			Object task = null;
 			while (true) {
-				Object task = null;
 				do {
 					task = taskBuffer.get_element();
 					if (task != null) {
@@ -61,8 +63,8 @@ public class ThreadPool {
 				if (noBlockTimer > 0) {
 					--noBlockTimer;
 				} else {
-					noBlockTimer = 10000;
-					this.block = true;
+					noBlockTimer = noBlockTimes;
+					taskBuffer.block.increase();// 设置这个线程将要阻塞
 
 					synchronized (taskBuffer) {
 						while (taskBuffer.isEmpty()) {
@@ -72,7 +74,7 @@ public class ThreadPool {
 								e.printStackTrace();
 							}
 						}
-						this.block = false;
+						taskBuffer.block.decrease();
 					}
 				}
 			}
@@ -80,19 +82,17 @@ public class ThreadPool {
 	}
 
 	public void add_task(Runnable task) {
-		int idx = (int) (Math.random() * WORK_NUM);
-		if (idx == WORK_NUM)
-			--idx;
+		int idx = workerIdx.increase(WORKER_NUM);
 		Worker worker = workerList.get(idx);
 
 		if (!worker.taskBuffer.add_element(task)) {// 无法向buffer中添加任务（buffer满）
 			overFlowTasks.offer(task);
 		}
-		
-		if (worker.block) {// 这个worker在阻塞等待新的任务
+
+		if (worker.taskBuffer.block.get() == 1) {// 这个worker在阻塞等待新的任务
 			synchronized (worker.taskBuffer) {
 				worker.taskBuffer.notify();
 			}
-		} 
+		}
 	}
 }

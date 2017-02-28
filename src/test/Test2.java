@@ -22,9 +22,7 @@ public class Test2 {// 测试线程池会不会丢任务
 				}
 				if (n == 20000) {
 					break;
-				} else {
-					// System.out.println("20000......" + n);
-				}
+				} 
 			}
 
 			counter = new int[20000];

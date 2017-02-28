@@ -3,13 +3,13 @@ package util;
 import sun.misc.Unsafe;
 
 @SuppressWarnings("restriction")
-public class SequenceNum {
+public final class SequenceNum {
 	private static final Unsafe unsafe;
 	@SuppressWarnings("unused")
 	private int p1, p2, p3, p4, p5, p6, p7;// 缓冲行填充
 	private volatile int value;
 	@SuppressWarnings("unused")
-	private long p8, p9, p10, p11, p12, p13, p14;// 缓冲行填充
+	private long p8, p9, p10, p11, p12, p13, p14, p15;// 缓冲行填充
 	private static final long VALUE_OFFSET;
 
 	static {
@@ -32,15 +32,16 @@ public class SequenceNum {
 	public final int get() {
 		return value;
 	}
-	
+
 	public final void set(int newValue) {
 		value = newValue;
 	}
 
 	public final int increase(int size) {// size 必须是2^n
+		int now = 0, newNum = 0;
 		while (true) {
-			int now = get();
-			int newNum = (now + 1) & (size - 1);
+			now = get();
+			newNum = (now + 1) & (size - 1);
 			if (compareAndSet(now, newNum)) {
 				return newNum;
 			}
@@ -48,19 +49,21 @@ public class SequenceNum {
 	}
 
 	public final int increase() {
+		int now = 0, newNum = 0;
 		while (true) {
-			int now = get();
-			int newNum = now + 1;
+			now = get();
+			newNum = now + 1;
 			if (compareAndSet(now, newNum)) {
 				return newNum;
 			}
 		}
 	}
-	
+
 	public final int decrease() {
+		int now = 0, newNum = 0;
 		while (true) {
-			int now = get();
-			int newNum = now - 1;
+			now = get();
+			newNum = now - 1;
 			if (compareAndSet(now, newNum)) {
 				return newNum;
 			}

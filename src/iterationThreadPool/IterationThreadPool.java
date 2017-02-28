@@ -9,17 +9,19 @@ import util.SequenceNum;
 public class IterationThreadPool {
 	private List<Worker> workerList;
 	private ConcurrentLinkedQueue<Runnable> overFlowTasks;// 任务溢出区
-	private final int WORK_NUM;
+	private final int WORKER_NUM;
 	private static IterationThreadPool instance = new IterationThreadPool();
 	private SequenceNum finishTaskNum;// 本批任务的完成数
-
+	private SequenceNum workerIdx;
+	
 	private IterationThreadPool() {
-		this.WORK_NUM = 4;
+		this.WORKER_NUM = 4;
 		this.workerList = new ArrayList<Worker>();
 		this.overFlowTasks = new ConcurrentLinkedQueue<Runnable>();
-		for (int i = 0; i < WORK_NUM; ++i) {
+		for (int i = 0; i < WORKER_NUM; ++i) {
 			add_worker();
 		}
+		this.workerIdx = new SequenceNum();
 	}
 
 	public static IterationThreadPool get_instance() {
@@ -34,18 +36,16 @@ public class IterationThreadPool {
 	}
 
 	class Worker extends Thread {
-		private volatile boolean block;// 用于判断这个worker是否已经阻塞等待新的任务
 		public RingBuffer taskBuffer;
 
 		public Worker(RingBuffer taskBuffer) {
 			this.taskBuffer = taskBuffer;
-			this.block = false;
 		}
 
 		public void run() {
 			int noBlockTimer = 1000;// 用于减少不必要的线程阻塞,尤其在大量简单的小任务加入线程池的时候
+			Object task = null;
 			while (true) {
-				Object task = null;
 				do {
 					task = taskBuffer.get_element();
 					if (task != null) {
@@ -66,7 +66,7 @@ public class IterationThreadPool {
 					--noBlockTimer;
 				} else {
 					noBlockTimer = 1000;
-					this.block = true;
+					taskBuffer.block.increase();
 
 					synchronized (taskBuffer) {
 						while (taskBuffer.isEmpty()) {
@@ -76,7 +76,7 @@ public class IterationThreadPool {
 								e.printStackTrace();
 							}
 						}
-						this.block = false;
+						taskBuffer.block.decrease();
 					}
 				}
 			}
@@ -85,16 +85,14 @@ public class IterationThreadPool {
 
 	private void add_task(Runnable task) {
 
-		int idx = (int) (Math.random() * WORK_NUM);
-		if (idx == WORK_NUM)
-			--idx;
+		int idx = workerIdx.increase(WORKER_NUM);
 		Worker worker = workerList.get(idx);
 
 		if (!worker.taskBuffer.add_element(task)) {// 无法向buffer中添加任务（buffer满）
 			overFlowTasks.offer(task);
 		}
 
-		if (worker.block) {// 这个worker在阻塞等待新的任务
+		if (worker.taskBuffer.block.get() == 1) {// 这个worker在阻塞等待新的任务
 			synchronized (worker.taskBuffer) {
 				worker.taskBuffer.notify();
 			}
